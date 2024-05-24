@@ -20,13 +20,16 @@ package com.spotify.scio.smb
 import com.spotify.scio.ScioContext
 import com.spotify.scio.avro.{Account, AccountStatus, Address, User}
 import com.spotify.scio.testing.PipelineSpec
+import org.apache.beam.sdk.Pipeline.PipelineExecutionException
 import org.apache.beam.sdk.extensions.smb.BucketMetadata.HashType
 import org.apache.beam.sdk.extensions.smb.AvroSortedBucketIO
 import org.apache.beam.sdk.values.TupleTag
 
 import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
+
 import java.nio.file.Files
+import scala.util.Try
 
 class SmbJoinFallbackTest extends PipelineSpec {
   private val logger = LoggerFactory.getLogger(classOf[SmbJoinFallbackTest])
@@ -99,27 +102,34 @@ class SmbJoinFallbackTest extends PipelineSpec {
 
     logger.info("Writing is done. Reading!")
 
-    // Read data
-    val read1 = AvroSortedBucketIO
-      .read(new TupleTag[User]("user1"), classOf[User])
-      .from(output1.toString)
-    val read2 = AvroSortedBucketIO
+    def readAndJoin = {
+      Try {
+        val read1 = AvroSortedBucketIO
+          .read(new TupleTag[User]("user1"), classOf[User])
+          .from(output1.toString)
+        val read2 = AvroSortedBucketIO
           .read(new TupleTag[User]("user2"), classOf[User])
           .from(output2.toString)
 
-    val sc = ScioContext()
+        val sc = ScioContext()
 
-    val tap = sc.sortMergeJoin(classOf[Integer], read1, read2)
-      .count
-      .materialize
+        val tap = sc.sortMergeJoin(classOf[Integer], read1, read2)
+          .count
+          .materialize
 
-    val result = tap
-      .get(sc.run().waitUntilDone())
-      .value
-      .toSeq
-      .head
+        val result = tap
+          .get(sc.run().waitUntilDone())
+          .value
+          .toSeq
+          .head
 
-    logger.info("Found " + result.toString + " records.")
+        logger.info("Found " + result.toString + " records.")
+      }
+    }
+
+    val result = readAndJoin
+    result.failed.get shouldBe a[PipelineExecutionException]
+    result.failed.get.getMessage should startWith ("java.lang.IllegalStateException")
   }
 
 
