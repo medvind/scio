@@ -34,8 +34,7 @@ import scala.util.Try
 class SmbJoinFallbackTest extends PipelineSpec {
   private val logger = LoggerFactory.getLogger(classOf[SmbJoinFallbackTest])
 
-  "SortedBucketScioContext.sortMergeJoin" should "fall back to regular join if hash types are " +
-    "incompatible" in {
+  "SortedBucketScioContext.sortMergeJoin" should "fail if hash types are incompatible" in {
 
     val tmpDir = Files.createTempDirectory("smb-version-test-mixed-avro-read").toFile
     tmpDir.deleteOnExit()
