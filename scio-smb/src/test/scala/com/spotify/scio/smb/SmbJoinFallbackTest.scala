@@ -34,27 +34,20 @@ import scala.util.Try
 class SmbJoinFallbackTest extends PipelineSpec {
   private val logger = LoggerFactory.getLogger(classOf[SmbJoinFallbackTest])
 
-  "SortedBucketScioContext.sortMergeJoin" should "fail if hash types are incompatible" in {
-
-    val tmpDir = Files.createTempDirectory("smb-version-test-mixed-avro-read").toFile
-    tmpDir.deleteOnExit()
-
-    val output1 = tmpDir.toPath.resolve("output1")
-    val output2 = tmpDir.toPath.resolve("output2")
-
+  def writeData(output1: String, output2: String): Unit = {
     val writes = Seq(
       AvroSortedBucketIO
-      .write(classOf[Integer], "id", classOf[User])
-      .to(output1.toString)
-      .withNumBuckets(1)
-      .withNumShards(1)
-      .withHashType(HashType.MURMUR3_32),
+        .write(classOf[Integer], "id", classOf[User])
+        .to(output1)
+        .withNumBuckets(1)
+        .withNumShards(1)
+        .withHashType(HashType.MURMUR3_32),
       AvroSortedBucketIO
-      .write(classOf[Integer], "id", classOf[User])
-      .to(output2.toString)
-      .withNumBuckets(1)
-      .withNumShards(1)
-      .withHashType(HashType.ICEBERG))
+        .write(classOf[Integer], "id", classOf[User])
+        .to(output2)
+        .withNumBuckets(1)
+        .withNumShards(1)
+        .withHashType(HashType.ICEBERG))
 
     val accounts = (1 to 10).map { i =>
       Account
@@ -84,7 +77,7 @@ class SmbJoinFallbackTest extends PipelineSpec {
         .setFirstName("Abcd" + i)
         .setLastName("Efgh" + i)
         .setEmail("something@example.com")
-        .setAccounts(Seq(accounts(i-1)).asJava)
+        .setAccounts(Seq(accounts(i - 1)).asJava)
         .setAddress(defaultAddress)
         .build()
     }
@@ -98,39 +91,49 @@ class SmbJoinFallbackTest extends PipelineSpec {
       sc.run()
       ()
     }
+  }
+  def readAndJoin(output1: String, output2: String): Try[Unit] = {
+    Try {
+      val read1 = AvroSortedBucketIO
+        .read(new TupleTag[User]("user1"), classOf[User])
+        .from(output1)
+      val read2 = AvroSortedBucketIO
+        .read(new TupleTag[User]("user2"), classOf[User])
+        .from(output2)
+
+      val sc = ScioContext()
+
+      val tap = sc.sortMergeJoin(classOf[Integer], read1, read2)
+        .count
+        .materialize
+
+      val result = tap
+        .get(sc.run().waitUntilDone())
+        .value
+        .toSeq
+        .head
+
+      logger.info("Found " + result.toString + " records.")
+    }
+  }
+
+  "SortedBucketScioContext.sortMergeJoin" should "fallback to regular join if hash types are " +
+    "incompatible" in {}
+
+  "SortedBucketScioContext.sortMergeJoin" should "fail if hash types are incompatible" in {
+    val tmpDir = Files.createTempDirectory("smb-version-test-join-exception").toFile
+    tmpDir.deleteOnExit()
+
+    val output1 = tmpDir.toPath.resolve("output1").toString
+    val output2 = tmpDir.toPath.resolve("output2").toString
+
+    writeData(output1, output2)
 
     logger.info("Writing is done. Reading!")
 
-    def readAndJoin = {
-      Try {
-        val read1 = AvroSortedBucketIO
-          .read(new TupleTag[User]("user1"), classOf[User])
-          .from(output1.toString)
-        val read2 = AvroSortedBucketIO
-          .read(new TupleTag[User]("user2"), classOf[User])
-          .from(output2.toString)
-
-        val sc = ScioContext()
-
-        val tap = sc.sortMergeJoin(classOf[Integer], read1, read2)
-          .count
-          .materialize
-
-        val result = tap
-          .get(sc.run().waitUntilDone())
-          .value
-          .toSeq
-          .head
-
-        logger.info("Found " + result.toString + " records.")
-      }
-    }
-
-    val result = readAndJoin
+    val result = readAndJoin(output1, output2)
     result.failed.get shouldBe a[PipelineExecutionException]
     result.failed.get.getMessage should startWith ("java.lang.IllegalStateException")
   }
-
-
 
 }
