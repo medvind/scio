@@ -51,7 +51,7 @@ val jacksonVersion = "2.14.1"
 val jodaTimeVersion = "2.10.10"
 val nettyTcNativeVersion = "2.0.52.Final"
 val slf4jVersion = "1.7.30"
-val zstdJniVersion = "1.5.2-5"
+val zstdJniVersion = "1.5.6-3"
 // dependent versions
 val googleApiServicesBigQueryVersion = s"v2-rev20240229-$googleClientsVersion"
 val googleApiServicesDataflowVersion = s"v1b3-rev20240218-$googleClientsVersion"
@@ -117,17 +117,17 @@ val featranVersion = "0.8.0"
 val httpAsyncClientVersion = "4.1.5"
 val jakartaJsonVersion = "2.1.3"
 val javaLshVersion = "0.12"
-val jedisVersion = "5.1.2"
+val jedisVersion = "5.1.3"
 val jnaVersion = "5.14.0"
 val junitInterfaceVersion = "0.13.3"
 val junitVersion = "4.13.2"
 val kantanCodecsVersion = "0.5.3"
 val kantanCsvVersion = "0.7.0"
 val kryoVersion = "4.0.3"
-val magnoliaVersion = "1.1.8"
-val magnolifyVersion = "0.7.2"
+val magnoliaVersion = "1.1.10"
+val magnolifyVersion = "0.7.3"
 val metricsVersion = "4.2.25"
-val munitVersion = "0.7.29"
+val munitVersion = "1.0.0"
 val neo4jDriverVersion = "4.4.16"
 val ndArrayVersion = "0.3.3"
 val parquetExtraVersion = "0.4.3"
@@ -138,7 +138,7 @@ val scalacheckVersion = "1.18.0"
 val scalaCollectionCompatVersion = "2.12.0"
 val scalaMacrosVersion = "2.1.1"
 val scalatestVersion = "3.2.18"
-val shapelessVersion = "2.3.10"
+val shapelessVersion = "2.3.12"
 val sparkeyVersion = "3.2.5"
 val tensorFlowVersion = "0.4.2"
 val tensorFlowMetadataVersion = "1.14.0"
@@ -1435,7 +1435,7 @@ lazy val `scio-repl` = project
         case PathList("git.properties" | "arrow-git.properties") =>
           // drop conflicting git properties
           MergeStrategy.discard
-        case PathList("META-INF", "versions", "9", "module-info.class") =>
+        case PathList(segments @ _*) if segments.last == "module-info.class" =>
           // drop conflicting module-info.class
           MergeStrategy.discard
         case PathList("META-INF", "gradle", "incremental.annotation.processors") =>
@@ -1612,7 +1612,7 @@ lazy val integration = project
       "com.google.guava" % "guava" % guavaVersion,
       "com.google.http-client" % "google-http-client" % googleHttpClientVersion,
       "com.google.protobuf" % "protobuf-java" % protobufVersion,
-      "com.microsoft.sqlserver" % "mssql-jdbc" % "12.6.1.jre11",
+      "com.microsoft.sqlserver" % "mssql-jdbc" % "12.6.2.jre11",
       "joda-time" % "joda-time" % jodaTimeVersion,
       "org.apache.avro" % "avro" % avroVersion,
       "org.apache.beam" % "beam-sdks-java-core" % beamVersion,
@@ -1774,6 +1774,7 @@ ThisBuild / dependencyOverrides ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
   "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+  "com.github.luben" % "zstd-jni" % zstdJniVersion,
   "com.google.api" % "api-common" % googleApiCommonVersion,
   "com.google.api" % "gax" % gaxVersion,
   "com.google.api" % "gax-grpc" % gaxVersion,
