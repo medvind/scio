@@ -34,4 +34,10 @@ public interface SortedBucketOptions extends PipelineOptions {
   int getSortedBucketReadDiskBufferMb();
 
   void setSortedBucketReadDiskBufferMb(int readDiskBufferMb);
+
+  @Description("Fall back to regular join if SMB inputs are incompatible")
+  @Default.Boolean(false)
+  boolean getSmbJoinFallbackEnabled();
+
+  void setSmbJoinFallbackEnabled(boolean smbJoinFallbackEnabled);
 }

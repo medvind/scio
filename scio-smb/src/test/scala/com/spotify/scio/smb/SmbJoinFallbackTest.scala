@@ -117,6 +117,22 @@ class SmbJoinFallbackTest extends PipelineSpec {
     }
   }
 
+  "SortedBucketScioContext.sortMergeJoin" should "use fallback if option is enabled" in {
+    val tmpDir = Files.createTempDirectory("smb-version-test-join").toFile
+    tmpDir.deleteOnExit()
+
+    val output1 = tmpDir.toPath.resolve("output1").toString
+    val output2 = tmpDir.toPath.resolve("output2").toString
+
+    writeData(output1, output2)
+
+    logger.info("Writing is done. Reading!")
+
+    val result = readAndJoin(output1, output2)
+    result.failed.get shouldBe a[PipelineExecutionException]
+    result.failed.get.getMessage should startWith ("java.lang.IllegalStateException")
+  }
+
   "SortedBucketScioContext.sortMergeJoin" should "fallback to regular join if hash types are " +
     "incompatible" in {}
 
